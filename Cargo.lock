@@ -557,6 +557,7 @@ dependencies = [
  "anyhow",
  "futures-util",
  "serde",
+ "serde_json",
  "sysinfo",
  "tokio",
  "warp",
