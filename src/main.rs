@@ -21,7 +21,7 @@ async fn main() {
             })
             .or(warp::path("processes")
                 .and(warp::get())
-                .map(move || serde_json::to_string(&*p2.lock().unwrap()).unwrap())),
+                .map(move || warp::reply::json(&*p2.lock().unwrap()))),
     )
     .run(([127, 0, 0, 1], 8080))
     .await;
