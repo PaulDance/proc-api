@@ -13,6 +13,7 @@ async fn main() {
 #[cfg(test)]
 mod tests {
     use std::str;
+    use std::sync::Arc;
 
     use warp::http::StatusCode;
     use warp::test::request;
@@ -41,12 +42,12 @@ mod tests {
         let res = request()
             .method("POST")
             .path("/acquire_process_list")
-            .reply(&routes::refresh_processes(cache.clone()))
+            .reply(&routes::refresh_processes(Arc::clone(&cache)))
             .await;
 
         assert_eq!(res.status(), StatusCode::OK);
         assert_eq!(res.body(), "");
-        assert!(!cache.lock().await.is_empty());
+        assert!(!cache.read().await.is_empty());
     }
 
     /// Refresh processes, then fetch them: non-empty JSON array in OK response.
@@ -56,12 +57,12 @@ mod tests {
         request()
             .method("POST")
             .path("/acquire_process_list")
-            .reply(&routes::refresh_processes(cache.clone()))
+            .reply(&routes::refresh_processes(Arc::clone(&cache)))
             .await;
         let res = request()
             .method("GET")
             .path("/processes")
-            .reply(&routes::list_processes(cache.clone()))
+            .reply(&routes::list_processes(Arc::clone(&cache)))
             .await;
 
         assert_eq!(res.status(), StatusCode::OK);

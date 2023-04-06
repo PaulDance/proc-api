@@ -6,13 +6,13 @@ use crate::proc::{Cache, ProcInfo};
 use crate::routes::SearchQuery;
 
 pub async fn list_processes(cache: Cache) -> Result<impl warp::Reply, Infallible> {
-    Ok(warp::reply::json(&*cache.lock().await))
+    Ok(warp::reply::json(&*cache.read().await))
 }
 
 pub async fn refresh_processes(cache: Cache) -> Result<impl warp::Reply, Infallible> {
     match ProcInfo::collect_all() {
         Ok(ps) => {
-            *cache.lock().await = ps;
+            *cache.write().await = ps;
             Ok(StatusCode::OK)
         }
         Err(_) => Ok(StatusCode::INTERNAL_SERVER_ERROR),
@@ -30,7 +30,7 @@ pub async fn search_processes(
         } => Ok(Box::new(StatusCode::BAD_REQUEST)),
         _ => Ok(Box::new(warp::reply::json(
             &cache
-                .lock()
+                .read()
                 .await
                 .iter()
                 .filter(|&proc| {

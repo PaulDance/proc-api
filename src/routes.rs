@@ -1,4 +1,5 @@
 use std::convert::Infallible;
+use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
 use warp::Filter;
@@ -9,9 +10,9 @@ use crate::proc::Cache;
 pub fn all(
     cache: Cache,
 ) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
-    list_processes(cache.clone())
-        .or(refresh_processes(cache.clone()))
-        .or(search_processes(cache.clone()))
+    list_processes(Arc::clone(&cache))
+        .or(refresh_processes(Arc::clone(&cache)))
+        .or(search_processes(Arc::clone(&cache)))
 }
 
 pub fn list_processes(
@@ -49,5 +50,5 @@ pub fn search_processes(
 }
 
 fn with_cache(cache: Cache) -> impl Filter<Extract = (Cache,), Error = Infallible> + Clone {
-    warp::any().map(move || cache.clone())
+    warp::any().map(move || Arc::clone(&cache))
 }

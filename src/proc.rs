@@ -1,10 +1,11 @@
+use std::sync::Arc;
+
 use anyhow::{anyhow, Result};
 use serde::Serialize;
-use std::sync::Arc;
 use sysinfo::{PidExt, ProcessExt, System, SystemExt, UserExt};
-use tokio::sync::Mutex;
+use tokio::sync::RwLock;
 
-pub type Cache = Arc<Mutex<Vec<ProcInfo>>>;
+pub type Cache = Arc<RwLock<Vec<ProcInfo>>>;
 
 #[derive(Debug, Serialize)]
 #[cfg_attr(test, derive(serde::Deserialize))]
