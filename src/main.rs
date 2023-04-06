@@ -47,7 +47,7 @@ mod tests {
 
         assert_eq!(res.status(), StatusCode::OK);
         assert_eq!(res.body(), "");
-        assert!(!cache.read().await.is_empty());
+        assert!(!cache.read().await.get().is_empty());
     }
 
     /// Refresh processes, then fetch them: non-empty JSON array in OK response.

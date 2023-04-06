@@ -6,8 +6,24 @@ use serde::Serialize;
 use sysinfo::{PidExt, ProcessExt, System, SystemExt, UserExt};
 use tokio::sync::RwLock;
 
-pub type ProcCache = Arc<RwLock<CacheData>>;
+pub type ProcCache = Arc<RwLock<CacheInner>>;
 type CacheData = HashSet<ProcInfo>;
+
+#[derive(Debug, Default)]
+pub struct CacheInner {
+    cache: CacheData,
+}
+
+impl CacheInner {
+    pub fn get(&self) -> &CacheData {
+        &self.cache
+    }
+
+    pub fn refresh(&mut self) -> Result<()> {
+        self.cache = ProcInfo::collect_all()?;
+        Ok(())
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize)]
 #[cfg_attr(test, derive(serde::Deserialize))]
