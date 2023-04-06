@@ -7,6 +7,7 @@ use tokio::sync::Mutex;
 pub type Cache = Arc<Mutex<Vec<ProcInfo>>>;
 
 #[derive(Debug, Serialize)]
+#[cfg_attr(test, derive(serde::Deserialize))]
 pub struct ProcInfo {
     pub pid: u32,
     pub uid: u32,
