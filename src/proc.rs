@@ -7,7 +7,7 @@ pub struct ProcInfo {
     pub pid: u32,
     pub uid: u32,
     pub name: String,
-    pub user: String,
+    pub username: String,
 }
 
 impl ProcInfo {
@@ -22,7 +22,7 @@ impl ProcInfo {
             res.push(Self {
                 pid: pid.as_u32(),
                 uid: **uid,
-                user: sys
+                username: sys
                     .get_user_by_id(uid)
                     .ok_or_else(|| anyhow!("Unable to retrieve process {pid}'s user name."))?
                     .name()
