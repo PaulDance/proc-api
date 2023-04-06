@@ -13,8 +13,10 @@ pub fn all(
     list_processes(Arc::clone(&cache))
         .or(refresh_processes(Arc::clone(&cache)))
         .or(search_processes(Arc::clone(&cache)))
+        .or(stream_processes(Arc::clone(&cache)))
 }
 
+// TODO: shorten these names with "procs"?
 pub fn list_processes(
     cache: ProcCache,
 ) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
@@ -33,6 +35,7 @@ pub fn refresh_processes(
         .and_then(handlers::refresh_processes)
 }
 
+// TODO: add remaining fields as a bonus.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SearchQuery {
     pub pid: Option<u32>,
@@ -47,6 +50,15 @@ pub fn search_processes(
         .and(warp::query::<SearchQuery>())
         .and(with_cache(cache))
         .and_then(handlers::search_processes)
+}
+
+pub fn stream_processes(
+    cache: ProcCache,
+) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
+    warp::path("data")
+        .and(warp::get())
+        .and(with_cache(cache))
+        .and_then(handlers::stream_processes)
 }
 
 fn with_cache(cache: ProcCache) -> impl Filter<Extract = (ProcCache,), Error = Infallible> + Clone {

@@ -4,24 +4,49 @@ use std::sync::Arc;
 use anyhow::{anyhow, Result};
 use serde::Serialize;
 use sysinfo::{PidExt, ProcessExt, System, SystemExt, UserExt};
-use tokio::sync::RwLock;
+use tokio::sync::{broadcast, RwLock};
 
 pub type ProcCache = Arc<RwLock<CacheInner>>;
 type CacheData = HashSet<ProcInfo>;
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct CacheInner {
     cache: CacheData,
+    channel: broadcast::Sender<Vec<ProcInfo>>,
+}
+
+impl Default for CacheInner {
+    fn default() -> Self {
+        Self {
+            cache: CacheData::default(),
+            channel: broadcast::channel(Self::CHAN_SIZE).0,
+        }
+    }
 }
 
 impl CacheInner {
+    const CHAN_SIZE: usize = 16;
+
     pub fn get(&self) -> &CacheData {
         &self.cache
     }
 
     pub fn refresh(&mut self) -> Result<()> {
-        self.cache = ProcInfo::collect_all()?;
+        // Use the receiver count as an indicator of the current mode of
+        // operation: 0 means blocking, anything else means streaming.
+        if self.channel.receiver_count() == 0 {
+            self.cache = ProcInfo::collect_all()?;
+        } else {
+            let old = self.cache.clone();
+            self.cache = ProcInfo::collect_all()?;
+            self.channel
+                .send(self.cache.difference(&old).cloned().collect())?;
+        }
         Ok(())
+    }
+
+    pub fn subscribe(&self) -> broadcast::Receiver<Vec<ProcInfo>> {
+        self.channel.subscribe()
     }
 }
 

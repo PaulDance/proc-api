@@ -1,6 +1,8 @@
 use std::convert::Infallible;
 
-use warp::http::StatusCode;
+use async_stream::stream;
+use futures_util::stream::{self, Stream, StreamExt};
+use warp::{http::StatusCode, sse};
 
 use crate::proc::ProcCache;
 use crate::routes::SearchQuery;
@@ -43,4 +45,24 @@ pub async fn search_processes(
                 .collect::<Vec<_>>(),
         ))),
     }
+}
+
+pub async fn stream_processes(cache: ProcCache) -> Result<impl warp::Reply, Infallible> {
+    Ok(sse::reply(
+        warp::sse::keep_alive().stream(proc_sse_events(cache).await),
+    ))
+}
+
+async fn proc_sse_events(cache: ProcCache) -> impl Stream<Item = Result<sse::Event, Infallible>> {
+    let mut rx = cache.read().await.subscribe();
+    stream::iter(cache.read().await.get().clone().into_iter())
+        .chain(
+            stream! {
+                while let Ok(proc_group) = rx.recv().await {
+                    yield stream::iter(proc_group.into_iter());
+                }
+            }
+            .flatten(),
+        )
+        .map(|proc| Ok(sse::Event::default().json_data(proc).unwrap()))
 }

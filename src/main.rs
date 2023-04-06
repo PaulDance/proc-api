@@ -1,3 +1,5 @@
+//! TODO: write docs.
+
 mod proc;
 use proc::ProcCache;
 mod handlers;
@@ -72,4 +74,11 @@ mod tests {
                 .is_empty()
         );
     }
+
+    // TODO: write tests for the streaming parts:
+    //  * Open stream, refresh, observe at least two lines.
+    //  * Refresh, open stream, observe some data.
+    //  * Refresh, open stream, observe some data, refresh, observe again.
+    //  * Open stream, refresh, observe, close stream, observe, refresh, observe.
+    //  * Refresh, observe, open stream, refresh, observe, close stream, observe, refresh, observe.
 }
