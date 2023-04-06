@@ -1,6 +1,10 @@
 use anyhow::{anyhow, Result};
 use serde::Serialize;
+use std::sync::Arc;
 use sysinfo::{PidExt, ProcessExt, System, SystemExt, UserExt};
+use tokio::sync::Mutex;
+
+pub type Cache = Arc<Mutex<Vec<ProcInfo>>>;
 
 #[derive(Debug, Serialize)]
 pub struct ProcInfo {
