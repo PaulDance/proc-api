@@ -1,6 +1,5 @@
 use std::sync::{Arc, Mutex};
 
-use anyhow::Result;
 use warp::Filter;
 
 mod proc;
