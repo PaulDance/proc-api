@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::sync::Arc;
 
 use anyhow::{anyhow, Result};
@@ -5,9 +6,10 @@ use serde::Serialize;
 use sysinfo::{PidExt, ProcessExt, System, SystemExt, UserExt};
 use tokio::sync::RwLock;
 
-pub type ProcCache = Arc<RwLock<Vec<ProcInfo>>>;
+pub type ProcCache = Arc<RwLock<CacheData>>;
+type CacheData = HashSet<ProcInfo>;
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize)]
 #[cfg_attr(test, derive(serde::Deserialize))]
 pub struct ProcInfo {
     pub pid: u32,
@@ -17,15 +19,15 @@ pub struct ProcInfo {
 }
 
 impl ProcInfo {
-    pub fn collect_all() -> Result<Vec<Self>> {
-        let mut res = Vec::new();
+    pub fn collect_all() -> Result<CacheData> {
+        let mut res = CacheData::new();
         let sys = System::new_all();
 
         for (pid, proc) in sys.processes() {
             let uid = proc
                 .user_id()
                 .ok_or_else(|| anyhow!("Process {pid} does not have an associated user."))?;
-            res.push(Self {
+            res.insert(Self {
                 pid: pid.as_u32(),
                 uid: **uid,
                 username: sys
@@ -34,7 +36,7 @@ impl ProcInfo {
                     .name()
                     .to_owned(),
                 name: proc.name().to_owned(),
-            })
+            });
         }
 
         Ok(res)
