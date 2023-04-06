@@ -1,11 +1,11 @@
 mod proc;
-use proc::Cache;
+use proc::ProcCache;
 mod handlers;
 mod routes;
 
 #[tokio::main]
 async fn main() {
-    warp::serve(routes::all(Cache::default()))
+    warp::serve(routes::all(ProcCache::default()))
         .run(([127, 0, 0, 1], 8080))
         .await;
 }
@@ -28,7 +28,7 @@ mod tests {
         let res = request()
             .method("GET")
             .path("/processes")
-            .reply(&routes::list_processes(Cache::default()))
+            .reply(&routes::list_processes(ProcCache::default()))
             .await;
 
         assert_eq!(res.status(), StatusCode::OK);
@@ -38,7 +38,7 @@ mod tests {
     /// Refresh processes: empty OK response, non-empty cache.
     #[tokio::test]
     async fn test_refresh_procs() {
-        let cache = Cache::default();
+        let cache = ProcCache::default();
         let res = request()
             .method("POST")
             .path("/acquire_process_list")
@@ -53,7 +53,7 @@ mod tests {
     /// Refresh processes, then fetch them: non-empty JSON array in OK response.
     #[tokio::test]
     async fn test_list_procs_refreshed() {
-        let cache = Cache::default();
+        let cache = ProcCache::default();
         request()
             .method("POST")
             .path("/acquire_process_list")

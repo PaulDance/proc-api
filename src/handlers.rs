@@ -2,14 +2,14 @@ use std::convert::Infallible;
 
 use warp::http::StatusCode;
 
-use crate::proc::{Cache, ProcInfo};
+use crate::proc::{ProcCache, ProcInfo};
 use crate::routes::SearchQuery;
 
-pub async fn list_processes(cache: Cache) -> Result<impl warp::Reply, Infallible> {
+pub async fn list_processes(cache: ProcCache) -> Result<impl warp::Reply, Infallible> {
     Ok(warp::reply::json(&*cache.read().await))
 }
 
-pub async fn refresh_processes(cache: Cache) -> Result<impl warp::Reply, Infallible> {
+pub async fn refresh_processes(cache: ProcCache) -> Result<impl warp::Reply, Infallible> {
     match ProcInfo::collect_all() {
         Ok(ps) => {
             *cache.write().await = ps;
@@ -21,7 +21,7 @@ pub async fn refresh_processes(cache: Cache) -> Result<impl warp::Reply, Infalli
 
 pub async fn search_processes(
     query: SearchQuery,
-    cache: Cache,
+    cache: ProcCache,
 ) -> Result<Box<dyn warp::Reply>, Infallible> {
     match query {
         SearchQuery {

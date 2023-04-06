@@ -5,10 +5,10 @@ use serde::{Deserialize, Serialize};
 use warp::Filter;
 
 use crate::handlers;
-use crate::proc::Cache;
+use crate::proc::ProcCache;
 
 pub fn all(
-    cache: Cache,
+    cache: ProcCache,
 ) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
     list_processes(Arc::clone(&cache))
         .or(refresh_processes(Arc::clone(&cache)))
@@ -16,7 +16,7 @@ pub fn all(
 }
 
 pub fn list_processes(
-    cache: Cache,
+    cache: ProcCache,
 ) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
     warp::path("processes")
         .and(warp::get())
@@ -25,7 +25,7 @@ pub fn list_processes(
 }
 
 pub fn refresh_processes(
-    cache: Cache,
+    cache: ProcCache,
 ) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
     warp::path("acquire_process_list")
         .and(warp::post())
@@ -40,7 +40,7 @@ pub struct SearchQuery {
 }
 
 pub fn search_processes(
-    cache: Cache,
+    cache: ProcCache,
 ) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
     warp::path("search")
         .and(warp::get())
@@ -49,6 +49,6 @@ pub fn search_processes(
         .and_then(handlers::search_processes)
 }
 
-fn with_cache(cache: Cache) -> impl Filter<Extract = (Cache,), Error = Infallible> + Clone {
+fn with_cache(cache: ProcCache) -> impl Filter<Extract = (ProcCache,), Error = Infallible> + Clone {
     warp::any().map(move || Arc::clone(&cache))
 }

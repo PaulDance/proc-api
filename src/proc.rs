@@ -5,7 +5,7 @@ use serde::Serialize;
 use sysinfo::{PidExt, ProcessExt, System, SystemExt, UserExt};
 use tokio::sync::RwLock;
 
-pub type Cache = Arc<RwLock<Vec<ProcInfo>>>;
+pub type ProcCache = Arc<RwLock<Vec<ProcInfo>>>;
 
 #[derive(Debug, Serialize)]
 #[cfg_attr(test, derive(serde::Deserialize))]
