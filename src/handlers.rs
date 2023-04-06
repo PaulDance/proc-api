@@ -5,6 +5,10 @@ use warp::http::StatusCode;
 use crate::proc::{Cache, ProcInfo};
 use crate::routes::SearchQuery;
 
+pub async fn list_processes(cache: Cache) -> Result<impl warp::Reply, Infallible> {
+    Ok(warp::reply::json(&*cache.lock().await))
+}
+
 pub async fn refresh_processes(cache: Cache) -> Result<impl warp::Reply, Infallible> {
     match ProcInfo::collect_all() {
         Ok(ps) => {
@@ -13,10 +17,6 @@ pub async fn refresh_processes(cache: Cache) -> Result<impl warp::Reply, Infalli
         }
         Err(_) => Ok(StatusCode::INTERNAL_SERVER_ERROR),
     }
-}
-
-pub async fn list_processes(cache: Cache) -> Result<impl warp::Reply, Infallible> {
-    Ok(warp::reply::json(&*cache.lock().await))
 }
 
 pub async fn search_processes(
