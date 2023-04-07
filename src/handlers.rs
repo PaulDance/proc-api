@@ -26,6 +26,8 @@ pub async fn search_procs(
     match query {
         SearchQuery {
             pid: None,
+            uid: None,
+            name: None,
             username: None,
         } => Ok(Box::new(StatusCode::BAD_REQUEST)),
         _ => Ok(Box::new(warp::reply::json(
@@ -36,6 +38,12 @@ pub async fn search_procs(
                 .iter()
                 .filter(|&proc| {
                     (query.pid == None || query.pid == Some(proc.pid))
+                        && (query.uid == None || query.uid == Some(proc.uid))
+                        && query
+                            .name
+                            .as_ref()
+                            .map(|name| name == proc.name.as_str())
+                            .unwrap_or(true)
                         && query
                             .username
                             .as_ref()

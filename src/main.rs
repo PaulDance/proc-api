@@ -75,6 +75,8 @@ mod tests {
         );
     }
 
+    // TODO: write tests for the searching part.
+
     // TODO: write tests for the streaming parts:
     //  * Open stream, refresh, observe at least two lines.
     //  * Refresh, open stream, observe some data.

@@ -34,10 +34,11 @@ pub fn refresh_procs(
         .and_then(handlers::refresh_procs)
 }
 
-// TODO: add remaining fields as a bonus.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SearchQuery {
     pub pid: Option<u32>,
+    pub uid: Option<u32>,
+    pub name: Option<String>,
     pub username: Option<String>,
 }
 
