@@ -75,7 +75,77 @@ mod tests {
         );
     }
 
-    // TODO: write tests for the searching part.
+    /// Query the search endpoint without parameters: empty body in BAD REQUEST
+    /// response.
+    #[tokio::test]
+    async fn test_search_procs_empty_noparams_is_badrequest() {
+        let res = request()
+            .method("GET")
+            .path("/search")
+            .reply(&routes::search_procs(ProcCache::default()))
+            .await;
+
+        assert_eq!(res.status(), StatusCode::BAD_REQUEST);
+        assert_eq!(res.body(), "");
+    }
+
+    /// Query the search endpoint without parameters even after refreshing
+    /// the cache: empty body in BAD REQUEST response.
+    #[tokio::test]
+    async fn test_search_procs_refreshed_noparams_is_badrequest() {
+        let cache = ProcCache::default();
+        request()
+            .method("POST")
+            .path("/acquire_process_list")
+            .reply(&routes::refresh_procs(Arc::clone(&cache)))
+            .await;
+        let res = request()
+            .method("GET")
+            .path("/search")
+            .reply(&routes::search_procs(Arc::clone(&cache)))
+            .await;
+
+        assert_eq!(res.status(), StatusCode::BAD_REQUEST);
+        assert_eq!(res.body(), "");
+    }
+
+    /// Search for root processes without refreshing the cache first: empty
+    /// JSON array in OK response.
+    #[tokio::test]
+    async fn test_search_procs_empty() {
+        let res = request()
+            .method("GET")
+            .path("/search?uid=0")
+            .reply(&routes::search_procs(ProcCache::default()))
+            .await;
+
+        assert_eq!(res.status(), StatusCode::OK);
+        assert_eq!(res.body(), "[]");
+    }
+
+    /// Search for root processes by refreshing the cache first: non-empty JSON
+    /// array in OK response.
+    #[tokio::test]
+    async fn test_search_procs_refreshed() {
+        let cache = ProcCache::default();
+        request()
+            .method("POST")
+            .path("/acquire_process_list")
+            .reply(&routes::refresh_procs(Arc::clone(&cache)))
+            .await;
+        let res = request()
+            .method("GET")
+            .path("/search?uid=0")
+            .reply(&routes::search_procs(Arc::clone(&cache)))
+            .await;
+
+        assert_eq!(res.status(), StatusCode::OK);
+        assert!(
+            !serde_json::from_str::<Vec<ProcInfo>>(str::from_utf8(&**res.body()).unwrap())
+                .unwrap()
+                .is_empty()
+        );
+    }
 
     // TODO: write tests for the streaming parts:
     //  * Open stream, refresh, observe at least two lines.
