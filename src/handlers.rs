@@ -5,10 +5,19 @@ use std::convert::Infallible;
 
 use async_stream::stream;
 use futures_util::stream::{self, Stream, StreamExt};
+use tokio::time::{self, Duration};
 use warp::{http::StatusCode, sse};
 
 use crate::proc::ProcCache;
 use crate::routes::SearchQuery;
+
+/// Timeout used in [`proc_sse_events`] in order to cancel the stream task
+/// during testing, but not when running normally.
+const SSE_TOUT: Duration = if cfg!(test) {
+    Duration::from_secs(1)
+} else {
+    Duration::MAX
+};
 
 /// Handles [`crate::routes::list_procs`] by returning the currently-cached
 /// process data as a JSON reply.
@@ -100,7 +109,7 @@ async fn proc_sse_events(cache: ProcCache) -> impl Stream<Item = Result<sse::Eve
         .chain(
             // https://docs.rs/tokio/latest/tokio/stream/index.html
             stream! {
-                while let Ok(proc_group) = rx.recv().await {
+                while let Ok(Ok(proc_group)) = time::timeout(SSE_TOUT, rx.recv()).await {
                     yield stream::iter(proc_group.into_iter());
                 }
             }
