@@ -1,10 +1,11 @@
-//! TODO: write docs.
+//! Main module: server launching and integration testing.
 
 mod proc;
 use proc::ProcCache;
 mod handlers;
 mod routes;
 
+/// Start the server on a default, non-configurable, local-only port.
 #[tokio::main]
 async fn main() {
     warp::serve(routes::all(ProcCache::default()))
@@ -12,6 +13,7 @@ async fn main() {
         .await;
 }
 
+/// Basic integration tests.
 #[cfg(test)]
 mod tests {
     use std::str;
