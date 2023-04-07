@@ -30,7 +30,7 @@ mod tests {
         let res = request()
             .method("GET")
             .path("/processes")
-            .reply(&routes::list_processes(ProcCache::default()))
+            .reply(&routes::list_procs(ProcCache::default()))
             .await;
 
         assert_eq!(res.status(), StatusCode::OK);
@@ -44,7 +44,7 @@ mod tests {
         let res = request()
             .method("POST")
             .path("/acquire_process_list")
-            .reply(&routes::refresh_processes(Arc::clone(&cache)))
+            .reply(&routes::refresh_procs(Arc::clone(&cache)))
             .await;
 
         assert_eq!(res.status(), StatusCode::OK);
@@ -59,12 +59,12 @@ mod tests {
         request()
             .method("POST")
             .path("/acquire_process_list")
-            .reply(&routes::refresh_processes(Arc::clone(&cache)))
+            .reply(&routes::refresh_procs(Arc::clone(&cache)))
             .await;
         let res = request()
             .method("GET")
             .path("/processes")
-            .reply(&routes::list_processes(Arc::clone(&cache)))
+            .reply(&routes::list_procs(Arc::clone(&cache)))
             .await;
 
         assert_eq!(res.status(), StatusCode::OK);

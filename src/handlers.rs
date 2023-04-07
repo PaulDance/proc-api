@@ -7,11 +7,11 @@ use warp::{http::StatusCode, sse};
 use crate::proc::ProcCache;
 use crate::routes::SearchQuery;
 
-pub async fn list_processes(cache: ProcCache) -> Result<impl warp::Reply, Infallible> {
+pub async fn list_procs(cache: ProcCache) -> Result<impl warp::Reply, Infallible> {
     Ok(warp::reply::json(&*cache.read().await.get()))
 }
 
-pub async fn refresh_processes(cache: ProcCache) -> Result<impl warp::Reply, Infallible> {
+pub async fn refresh_procs(cache: ProcCache) -> Result<impl warp::Reply, Infallible> {
     Ok(cache
         .write()
         .await
@@ -19,7 +19,7 @@ pub async fn refresh_processes(cache: ProcCache) -> Result<impl warp::Reply, Inf
         .map_or(StatusCode::INTERNAL_SERVER_ERROR, |_| StatusCode::OK))
 }
 
-pub async fn search_processes(
+pub async fn search_procs(
     query: SearchQuery,
     cache: ProcCache,
 ) -> Result<Box<dyn warp::Reply>, Infallible> {
@@ -47,7 +47,7 @@ pub async fn search_processes(
     }
 }
 
-pub async fn stream_processes(cache: ProcCache) -> Result<impl warp::Reply, Infallible> {
+pub async fn stream_procs(cache: ProcCache) -> Result<impl warp::Reply, Infallible> {
     Ok(sse::reply(
         warp::sse::keep_alive().stream(proc_sse_events(cache).await),
     ))

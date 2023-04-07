@@ -10,29 +10,28 @@ use crate::proc::ProcCache;
 pub fn all(
     cache: ProcCache,
 ) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
-    list_processes(Arc::clone(&cache))
-        .or(refresh_processes(Arc::clone(&cache)))
-        .or(search_processes(Arc::clone(&cache)))
-        .or(stream_processes(Arc::clone(&cache)))
+    list_procs(Arc::clone(&cache))
+        .or(refresh_procs(Arc::clone(&cache)))
+        .or(search_procs(Arc::clone(&cache)))
+        .or(stream_procs(Arc::clone(&cache)))
 }
 
-// TODO: shorten these names with "procs"?
-pub fn list_processes(
+pub fn list_procs(
     cache: ProcCache,
 ) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
     warp::path("processes")
         .and(warp::get())
         .and(with_cache(cache))
-        .and_then(handlers::list_processes)
+        .and_then(handlers::list_procs)
 }
 
-pub fn refresh_processes(
+pub fn refresh_procs(
     cache: ProcCache,
 ) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
     warp::path("acquire_process_list")
         .and(warp::post())
         .and(with_cache(cache))
-        .and_then(handlers::refresh_processes)
+        .and_then(handlers::refresh_procs)
 }
 
 // TODO: add remaining fields as a bonus.
@@ -42,23 +41,23 @@ pub struct SearchQuery {
     pub username: Option<String>,
 }
 
-pub fn search_processes(
+pub fn search_procs(
     cache: ProcCache,
 ) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
     warp::path("search")
         .and(warp::get())
         .and(warp::query::<SearchQuery>())
         .and(with_cache(cache))
-        .and_then(handlers::search_processes)
+        .and_then(handlers::search_procs)
 }
 
-pub fn stream_processes(
+pub fn stream_procs(
     cache: ProcCache,
 ) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
     warp::path("data")
         .and(warp::get())
         .and(with_cache(cache))
-        .and_then(handlers::stream_processes)
+        .and_then(handlers::stream_procs)
 }
 
 fn with_cache(cache: ProcCache) -> impl Filter<Extract = (ProcCache,), Error = Infallible> + Clone {
