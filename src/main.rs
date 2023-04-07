@@ -19,6 +19,8 @@ mod tests {
     use std::str;
     use std::sync::Arc;
 
+    use tokio::sync::Barrier;
+    use tokio::time::{self, Duration};
     use warp::http::StatusCode;
     use warp::test::request;
 
@@ -149,10 +151,262 @@ mod tests {
         );
     }
 
-    // TODO: write tests for the streaming parts:
-    //  * Open stream, refresh, observe at least two lines.
-    //  * Refresh, open stream, observe some data.
-    //  * Refresh, open stream, observe some data, refresh, observe again.
-    //  * Open stream, refresh, observe, close stream, observe, refresh, observe.
-    //  * Refresh, observe, open stream, refresh, observe, close stream, observe, refresh, observe.
+    /// Start the stream, wait for the test timout: no data received.
+    #[tokio::test]
+    async fn test_stream_procs_empty() {
+        let cache = ProcCache::default();
+
+        let stream = {
+            let cache = Arc::clone(&cache);
+
+            tokio::spawn(async move {
+                request()
+                    .method("GET")
+                    .path("/data")
+                    .reply(&routes::stream_procs(cache))
+                    .await
+            })
+        };
+
+        assert!(cache.read().await.get().is_empty());
+
+        let res = tokio::join!(stream).0.unwrap();
+        assert_eq!(res.status(), StatusCode::OK);
+        assert!(str::from_utf8(res.body()).unwrap().lines().take(2).count() == 0);
+    }
+
+    /// Start the stream, refresh processes, wait for the timeout: at least one
+    /// process received.
+    #[tokio::test]
+    async fn test_stream_procs_refreshed_after() {
+        let cache = ProcCache::default();
+        let sync = Arc::new(Barrier::new(2));
+
+        let stream = {
+            let cache = Arc::clone(&cache);
+            let sync = Arc::clone(&sync);
+
+            tokio::spawn(async move {
+                let filter = routes::stream_procs(cache);
+                let fut = request().method("GET").path("/data").reply(&filter);
+                sync.wait().await;
+                fut.await
+            })
+        };
+
+        sync.wait().await;
+        assert_eq!(
+            request()
+                .method("POST")
+                .path("/acquire_process_list")
+                .reply(&routes::refresh_procs(Arc::clone(&cache)))
+                .await
+                .status(),
+            StatusCode::OK
+        );
+        assert!(!cache.read().await.get().is_empty());
+
+        let res = tokio::join!(stream).0.unwrap();
+        assert_eq!(res.status(), StatusCode::OK);
+        assert!(str::from_utf8(res.body()).unwrap().lines().take(2).count() == 2);
+    }
+
+    /// Refresh the processes first, then open the stream, wait for the timeout:
+    /// at least one process is observed.
+    #[tokio::test]
+    async fn test_stream_procs_refreshed_first() {
+        let cache = ProcCache::default();
+
+        assert_eq!(
+            request()
+                .method("POST")
+                .path("/acquire_process_list")
+                .reply(&routes::refresh_procs(Arc::clone(&cache)))
+                .await
+                .status(),
+            StatusCode::OK
+        );
+
+        let cache_len = cache.read().await.get().len();
+        assert!(cache_len != 0);
+
+        let stream = {
+            let cache = Arc::clone(&cache);
+
+            tokio::spawn(async move {
+                request()
+                    .method("GET")
+                    .path("/data")
+                    .reply(&routes::stream_procs(cache))
+                    .await
+            })
+        };
+
+        assert!(cache.read().await.get().len() == cache_len);
+
+        let res = tokio::join!(stream).0.unwrap();
+        assert_eq!(res.status(), StatusCode::OK);
+        assert!(str::from_utf8(res.body()).unwrap().lines().take(2).count() == 2);
+    }
+
+    /// Refresh the processes first, then open the stream, refresh again, wait
+    /// for the timeout: at least one process is observed after each action.
+    #[tokio::test]
+    async fn test_stream_procs_refreshed_first_and_after() {
+        let cache = ProcCache::default();
+        let sync = Arc::new(Barrier::new(2));
+
+        assert_eq!(
+            request()
+                .method("POST")
+                .path("/acquire_process_list")
+                .reply(&routes::refresh_procs(Arc::clone(&cache)))
+                .await
+                .status(),
+            StatusCode::OK
+        );
+        assert!(!cache.read().await.get().is_empty());
+
+        let stream = {
+            let cache = Arc::clone(&cache);
+            let sync = Arc::clone(&sync);
+
+            tokio::spawn(async move {
+                let filter = routes::stream_procs(cache);
+                let fut = request().method("GET").path("/data").reply(&filter);
+                sync.wait().await;
+                fut.await
+            })
+        };
+
+        sync.wait().await;
+        time::sleep(Duration::from_millis(500)).await;
+        assert_eq!(
+            request()
+                .method("POST")
+                .path("/acquire_process_list")
+                .reply(&routes::refresh_procs(Arc::clone(&cache)))
+                .await
+                .status(),
+            StatusCode::OK
+        );
+        assert!(!cache.read().await.get().is_empty());
+
+        let res = tokio::join!(stream).0.unwrap();
+        assert_eq!(res.status(), StatusCode::OK);
+        assert!(str::from_utf8(res.body()).unwrap().lines().take(2).count() == 2);
+    }
+
+    /// Open the stream, refresh processes, wait for the timeout, refresh again:
+    /// observe at least one process each time.
+    #[tokio::test]
+    async fn test_stream_procs_close_refreshed_after() {
+        let cache = ProcCache::default();
+        let sync = Arc::new(Barrier::new(2));
+
+        let stream = {
+            let cache = Arc::clone(&cache);
+            let sync = Arc::clone(&sync);
+
+            tokio::spawn(async move {
+                let filter = routes::stream_procs(cache);
+                let fut = request().method("GET").path("/data").reply(&filter);
+                sync.wait().await;
+                fut.await
+            })
+        };
+
+        sync.wait().await;
+        assert_eq!(
+            request()
+                .method("POST")
+                .path("/acquire_process_list")
+                .reply(&routes::refresh_procs(Arc::clone(&cache)))
+                .await
+                .status(),
+            StatusCode::OK
+        );
+        assert!(!cache.read().await.get().is_empty());
+
+        let res = tokio::join!(stream).0.unwrap();
+        assert_eq!(res.status(), StatusCode::OK);
+        assert!(str::from_utf8(res.body()).unwrap().lines().take(2).count() == 2);
+
+        assert_eq!(
+            request()
+                .method("POST")
+                .path("/acquire_process_list")
+                .reply(&routes::refresh_procs(Arc::clone(&cache)))
+                .await
+                .status(),
+            StatusCode::OK
+        );
+        assert!(!cache.read().await.get().is_empty());
+    }
+
+    /// Repeat multiple times: open a stream, refresh processes, close the
+    /// stream, refresh, open another stream and close it right after. At least
+    /// one process should be observed at each step and iteration.
+    #[tokio::test]
+    async fn test_stream_procs_close_reopen_refreshed() {
+        let cache = ProcCache::default();
+        let sync = Arc::new(Barrier::new(2));
+
+        for _ in 0..3 {
+            let stream = {
+                let cache = Arc::clone(&cache);
+                let sync = Arc::clone(&sync);
+
+                tokio::spawn(async move {
+                    let filter = routes::stream_procs(cache);
+                    let fut = request().method("GET").path("/data").reply(&filter);
+                    sync.wait().await;
+                    fut.await
+                })
+            };
+
+            sync.wait().await;
+            assert_eq!(
+                request()
+                    .method("POST")
+                    .path("/acquire_process_list")
+                    .reply(&routes::refresh_procs(Arc::clone(&cache)))
+                    .await
+                    .status(),
+                StatusCode::OK
+            );
+            assert!(!cache.read().await.get().is_empty());
+
+            let res = tokio::join!(stream).0.unwrap();
+            assert_eq!(res.status(), StatusCode::OK);
+            assert!(str::from_utf8(res.body()).unwrap().lines().take(2).count() == 2);
+
+            assert_eq!(
+                request()
+                    .method("POST")
+                    .path("/acquire_process_list")
+                    .reply(&routes::refresh_procs(Arc::clone(&cache)))
+                    .await
+                    .status(),
+                StatusCode::OK
+            );
+            assert!(!cache.read().await.get().is_empty());
+
+            let stream = {
+                let cache = Arc::clone(&cache);
+
+                tokio::spawn(async move {
+                    request()
+                        .method("GET")
+                        .path("/data")
+                        .reply(&routes::stream_procs(cache))
+                        .await
+                })
+            };
+
+            let res = tokio::join!(stream).0.unwrap();
+            assert_eq!(res.status(), StatusCode::OK);
+            assert!(str::from_utf8(res.body()).unwrap().lines().take(2).count() == 2);
+        }
+    }
 }
