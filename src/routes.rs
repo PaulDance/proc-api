@@ -1,7 +1,7 @@
 use std::convert::Infallible;
 use std::sync::Arc;
 
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use warp::Filter;
 
 use crate::handlers;
@@ -34,7 +34,7 @@ pub fn refresh_procs(
         .and_then(handlers::refresh_procs)
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct SearchQuery {
     pub pid: Option<u32>,
     pub uid: Option<u32>,
