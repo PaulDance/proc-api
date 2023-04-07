@@ -19,13 +19,13 @@ impl Default for CacheInner {
     fn default() -> Self {
         Self {
             cache: CacheData::default(),
-            channel: broadcast::channel(Self::CHAN_SIZE).0,
+            channel: broadcast::channel(Self::CHAN_CAP).0,
         }
     }
 }
 
 impl CacheInner {
-    const CHAN_SIZE: usize = 16;
+    const CHAN_CAP: usize = 16;
 
     pub fn get(&self) -> &CacheData {
         &self.cache
