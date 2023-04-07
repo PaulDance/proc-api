@@ -33,10 +33,10 @@ processes currently running on the OS hosting the server:
      ]
      ```
 
-     * If `POST /acquire_process_list` has not been requested previously, the
-       cache is thus empty, the response is therefore `[]`.
-     * If it is called multiple times without any `POST /acquire_process_list`
-       in between, the same response is given back every time.
+   * If `POST /acquire_process_list` has not been requested previously, the
+     cache is thus empty, the response is therefore `[]`.
+   * If it is called multiple times without any `POST /acquire_process_list`
+     in between, the same response is given back every time.
 
  * `GET /search?pid=<pid>&uid=<uid>&name=<name>&username=<username>`:
    * In effect, it enables filtering the results given by `GET /processes`.
