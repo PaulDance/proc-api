@@ -107,9 +107,17 @@ async fn proc_sse_events(cache: ProcCache) -> impl Stream<Item = Result<sse::Eve
         .chain(
             // https://docs.rs/tokio/latest/tokio/stream/index.html
             stream! {
-                while let Ok(Ok(proc_group)) = time::timeout(SSE_TOUT, rx.recv()).await {
+                debug!("SSE: stream started.");
+                while let Ok(Ok(proc_group)) = time::timeout(SSE_TOUT, async {
+                    debug!("SSE: waiting for channel data...");
+                    rx.recv().await
+                })
+                .await
+                {
+                    debug!("SSE: received {} new processes.", proc_group.len());
                     yield stream::iter(proc_group.into_iter());
                 }
+                debug!("SSE: stream ended.");
             }
             .flatten(),
         )

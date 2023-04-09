@@ -5,6 +5,8 @@ use std::net::IpAddr;
 
 use clap::Parser;
 use warp::Filter;
+#[macro_use]
+extern crate log;
 
 mod proc;
 use proc::ProcCache;

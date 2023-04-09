@@ -33,6 +33,7 @@ pub struct CacheInner {
 /// but constant capacity.
 impl Default for CacheInner {
     fn default() -> Self {
+        debug!("Cache built.");
         Self {
             cache: CacheData::default(),
             channel: broadcast::channel(Self::CHAN_CAP).0,
@@ -46,6 +47,7 @@ impl CacheInner {
 
     /// Returns the currently-cached process data.
     pub fn get(&self) -> &CacheData {
+        debug!("Cache read.");
         &self.cache
     }
 
@@ -58,21 +60,31 @@ impl CacheInner {
     /// computing the set difference between the new cache and the old one, but
     /// the cache is still completely overwritten in the end.
     pub fn refresh(&mut self) -> Result<()> {
+        debug!("Refreshing cache...");
+
         // Use the receiver count as an indicator of the current mode of
         // operation: 0 means blocking, anything else means streaming.
         if self.channel.receiver_count() == 0 {
+            debug!("No receivers: replace cache.");
             self.cache = ProcInfo::collect_all()?;
         } else {
+            debug!("At least one receiver:");
             let old = self.cache.clone();
+            debug!("Replacing cache...");
             self.cache = ProcInfo::collect_all()?;
+            debug!("Sending difference to channel...");
             self.channel
                 .send(self.cache.difference(&old).cloned().collect())?;
+            debug!("Difference sent.");
         }
+
+        debug!("Done refreshing.");
         Ok(())
     }
 
     /// Generates a new receiver by subscribing to the backing channel.
     pub fn subscribe(&self) -> broadcast::Receiver<Vec<ProcInfo>> {
+        debug!("Subscribed to cache channel.");
         self.channel.subscribe()
     }
 }
@@ -90,9 +102,11 @@ pub struct ProcInfo {
 impl ProcInfo {
     /// Collect all processes currently running on the host, blocking by nature.
     pub fn collect_all() -> Result<CacheData> {
+        debug!("Collecting processes...");
         let mut res = CacheData::new();
         let sys = System::new_all();
 
+        debug!("Mapping to inner data...");
         for (pid, proc) in sys.processes() {
             let uid = proc
                 .user_id()
@@ -109,6 +123,7 @@ impl ProcInfo {
             });
         }
 
+        debug!("Done collecting.");
         Ok(res)
     }
 }
