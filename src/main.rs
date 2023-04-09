@@ -38,7 +38,7 @@ async fn main() {
         env::set_var("RUST_LOG", format!("{CRATE_NAME}=info"));
     }
 
-    pretty_env_logger::init();
+    pretty_env_logger::init_timed();
     warp::serve(routes::all(&ProcCache::default()).with(warp::log(CRATE_NAME)))
         .run((args.addr, args.port))
         .await;
