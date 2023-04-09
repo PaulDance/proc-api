@@ -22,7 +22,7 @@ const SSE_TOUT: Duration = if cfg!(test) {
 /// Handles [`crate::routes::list_procs`] by returning the currently-cached
 /// process data as a JSON reply.
 pub async fn list_procs(cache: ProcCache) -> Result<impl warp::Reply, Infallible> {
-    Ok(warp::reply::json(&*cache.read().await.get()))
+    Ok(warp::reply::json(cache.read().await.get()))
 }
 
 /// Handles [`crate::routes::refresh_procs`] by refreshing the cache and returning a
@@ -63,18 +63,16 @@ pub async fn search_procs(
                     //  * Some(match) means filter matches => true;
                     //  * Some(_) means filters does not match => false;
                     // AND them all to reach usual search functionnality.
-                    (query.pid == None || query.pid == Some(proc.pid))
-                        && (query.uid == None || query.uid == Some(proc.uid))
+                    (query.pid.is_none() || query.pid == Some(proc.pid))
+                        && (query.uid.is_none() || query.uid == Some(proc.uid))
                         && query
                             .name
                             .as_ref()
-                            .map(|name| name == proc.name.as_str())
-                            .unwrap_or(true)
+                            .map_or(true, |name| name == proc.name.as_str())
                         && query
                             .username
                             .as_ref()
-                            .map(|username| username == proc.username.as_str())
-                            .unwrap_or(true)
+                            .map_or(true, |username| username == proc.username.as_str())
                 })
                 // Collect to a vector because uniqueness guarantees and
                 // operations of sets need not be used anymore are this point.

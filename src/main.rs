@@ -11,8 +11,8 @@ use proc::ProcCache;
 mod handlers;
 mod routes;
 
-/// "proc_api"
-const CRATE_NAME: &'static str = env!("CARGO_CRATE_NAME");
+/// `"proc_api"`
+const CRATE_NAME: &str = env!("CARGO_CRATE_NAME");
 
 /// Launch an HTTP server exposing the current host's process information.
 #[derive(clap::Parser, Debug, PartialEq, Eq)]
@@ -37,7 +37,7 @@ async fn main() {
     }
 
     pretty_env_logger::init();
-    warp::serve(routes::all(ProcCache::default()).with(warp::log(CRATE_NAME)))
+    warp::serve(routes::all(&ProcCache::default()).with(warp::log(CRATE_NAME)))
         .run((args.addr, args.port))
         .await;
 }

@@ -14,12 +14,12 @@ use crate::proc::ProcCache;
 /// Global route that dispatches to all the other effective routes defined in
 /// the [module](`self`).
 pub fn all(
-    cache: ProcCache,
+    cache: &ProcCache,
 ) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
-    list_procs(Arc::clone(&cache))
-        .or(refresh_procs(Arc::clone(&cache)))
-        .or(search_procs(Arc::clone(&cache)))
-        .or(stream_procs(Arc::clone(&cache)))
+    list_procs(Arc::clone(cache))
+        .or(refresh_procs(Arc::clone(cache)))
+        .or(search_procs(Arc::clone(cache)))
+        .or(stream_procs(Arc::clone(cache)))
 }
 
 /// Route defining the read-only endpoint retrieving currently-cached processes
