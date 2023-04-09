@@ -64,8 +64,8 @@ processes currently running on the OS hosting the server:
 ### Installation
 
  * Clone the [current repository](https://github.com/PaulDance/proc-api).
- * Run `cargo run`.
- * The server is then made available at `http://127.0.0.1:8080`.
+ * Run it with: `cargo run`. Some CLI options are available, see: `--help`.
+ * The server is then made available at `http://127.0.0.1:8080` by default.
 
 ### Testing
 

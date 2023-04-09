@@ -1,7 +1,9 @@
-//! Main module: server launching and integration testing.
+//! Main module: CLI parsing, server launching, and integration testing.
 
 use std::env;
+use std::net::IpAddr;
 
+use clap::Parser;
 use warp::Filter;
 
 mod proc;
@@ -12,9 +14,23 @@ mod routes;
 /// "proc_api"
 const CRATE_NAME: &'static str = env!("CARGO_CRATE_NAME");
 
-/// Start the server on a default, non-configurable, local-only port.
+/// Launch an HTTP server exposing the current host's process information.
+#[derive(clap::Parser, Debug, PartialEq, Eq)]
+#[command(author, version, about, long_about)]
+pub struct CliArgs {
+    /// The interface address to bind the server socket to.
+    #[arg(short, long, default_value = "127.0.0.1")]
+    pub addr: IpAddr,
+    /// The port number to listen on.
+    #[arg(short, long, default_value = "8080")]
+    pub port: u16,
+}
+
+/// Start the server on the given address and port.
 #[tokio::main]
 async fn main() {
+    let args = CliArgs::parse();
+
     // Use INFO as a default.
     if env::var_os("RUST_LOG").is_none() {
         env::set_var("RUST_LOG", format!("{CRATE_NAME}=info"));
@@ -22,7 +38,7 @@ async fn main() {
 
     pretty_env_logger::init();
     warp::serve(routes::all(ProcCache::default()).with(warp::log(CRATE_NAME)))
-        .run(([127, 0, 0, 1], 8080))
+        .run((args.addr, args.port))
         .await;
 }
 
