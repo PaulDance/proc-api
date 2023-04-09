@@ -1,14 +1,27 @@
 //! Main module: server launching and integration testing.
 
+use std::env;
+
+use warp::Filter;
+
 mod proc;
 use proc::ProcCache;
 mod handlers;
 mod routes;
 
+/// "proc_api"
+const CRATE_NAME: &'static str = env!("CARGO_CRATE_NAME");
+
 /// Start the server on a default, non-configurable, local-only port.
 #[tokio::main]
 async fn main() {
-    warp::serve(routes::all(ProcCache::default()))
+    // Use INFO as a default.
+    if env::var_os("RUST_LOG").is_none() {
+        env::set_var("RUST_LOG", format!("{CRATE_NAME}=info"));
+    }
+
+    pretty_env_logger::init();
+    warp::serve(routes::all(ProcCache::default()).with(warp::log(CRATE_NAME)))
         .run(([127, 0, 0, 1], 8080))
         .await;
 }
